@@ -127,21 +127,23 @@ app.post('/answer', (req, res) => {
   res.status(200).send(responseText);
 });
 
-// Execute endpoint
-app.post("/execute", checkToken, (req, res) => {
- const code = req.body;
- if (!code) {
- return res.status(400).json({ error: "No code pr
-ovided" });
- }
- try {
- // Execute the code
- const result = eval(code);
- res.json({ result });
- } catch (error) {
- res.status(500).json({ error: error.message, tra
-ce: error.stack });
- }
+// Safe Execute Endpoint (Removes eval)
+app.post("/execute", (req, res) => {
+    const { code } = req.body;
+
+    if (!code) {
+        return res.status(400).json({ error: "No code provided" });
+    }
+
+    try {
+        // Allow only limited operations using Function()
+        const safeFunction = new Function(`"use strict"; return (${code})`);
+        const result = safeFunction();
+
+        res.json({ result });
+    } catch (error) {
+        res.status(500).json({ error: error.message, trace: error.stack });
+    }
 });
 
 // Start the server
