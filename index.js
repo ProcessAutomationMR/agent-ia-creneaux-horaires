@@ -127,11 +127,14 @@ app.post('/answer', (req, res) => {
   res.status(200).send(responseText);
 });
 
-// Execute Endpoint: Supports both "code" execution and "startTime"/"endTime" JSON
+// Execute Endpoint: Handles both "code" execution and "startTime" conversion
 app.post("/execute", (req, res) => {
+    console.log("DEBUG: Received request body:", req.body); // Debugging log
+
     const { code, startTime } = req.body;
 
     if (!code && !startTime) {
+        console.log("DEBUG: Missing parameters - code & startTime are both missing");
         return res.status(400).json({ error: "Missing required parameters: either 'code' or 'startTime' must be provided." });
     }
 
@@ -139,6 +142,7 @@ app.post("/execute", (req, res) => {
     if (startTime) {
         const startDate = new Date(startTime);
         if (isNaN(startDate.getTime())) {
+            console.log("DEBUG: Invalid startTime format:", startTime);
             return res.status(400).json({ error: "Invalid ISO format for 'startTime'." });
         }
 
