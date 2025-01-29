@@ -127,22 +127,35 @@ app.post('/answer', (req, res) => {
   res.status(200).send(responseText);
 });
 
-// Safe Execute Endpoint (Removes eval)
+// Execute Endpoint: Supports both "code" execution and "startTime"/"endTime" JSON
 app.post("/execute", (req, res) => {
-    const { code } = req.body;
+    const { code, startTime } = req.body;
 
-    if (!code) {
-        return res.status(400).json({ error: "No code provided" });
+    if (!code && !startTime) {
+        return res.status(400).json({ error: "Missing required parameters: either 'code' or 'startTime' must be provided." });
     }
 
+    // If 'startTime' is provided, convert it into an end time
+    if (startTime) {
+        const startDate = new Date(startTime);
+        if (isNaN(startDate.getTime())) {
+            return res.status(400).json({ error: "Invalid ISO format for 'startTime'." });
+        }
+
+        const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+        return res.json({
+            startTime: startTime,
+            endTime: endDate.toISOString().slice(0, 19)
+        });
+    }
+
+    // If 'code' is provided, execute it safely
     try {
-        // Allow only limited operations using Function()
         const safeFunction = new Function(`"use strict"; return (${code})`);
         const result = safeFunction();
-
-        res.json({ result });
+        return res.json({ result });
     } catch (error) {
-        res.status(500).json({ error: error.message, trace: error.stack });
+        return res.status(500).json({ error: error.message, trace: error.stack });
     }
 });
 
