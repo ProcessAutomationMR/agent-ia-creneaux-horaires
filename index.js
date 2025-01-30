@@ -165,14 +165,14 @@ app.post("/execute", (req, res) => {
 
 // Route to convert a given date into 4 separate time slots
 app.post('/convert-date', (req, res) => {
-    const { dateTime } = req.body;
+    const { date } = req.body;
 
-    if (!dateTime) {
-        return res.status(400).json({ message: "Missing 'dateTime' parameter." });
+    if (!date) {
+        return res.status(400).json({ message: "Missing 'date' parameter." });
     }
 
     // Convert input to Date object
-    const inputDate = new Date(dateTime);
+    const inputDate = new Date(date);
     if (isNaN(inputDate.getTime())) {
         return res.status(400).json({ message: "Invalid ISO date format." });
     }
@@ -191,7 +191,7 @@ app.post('/convert-date', (req, res) => {
     // Generate JSON response
     const response = timeSlots.map(slot => ({
         label: slot.label,
-        dateTime: `${datePart}T${slot.time}Z`
+        date: `${datePart}T${slot.time}Z`
     }));
 
     res.status(200).json(response);
