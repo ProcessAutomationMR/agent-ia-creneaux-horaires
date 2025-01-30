@@ -163,6 +163,40 @@ app.post("/execute", (req, res) => {
     }
 });
 
+// Route to convert a given date into 4 separate time slots
+app.post('/convert-date', (req, res) => {
+    const { dateTime } = req.body;
+
+    if (!dateTime) {
+        return res.status(400).json({ message: "Missing 'dateTime' parameter." });
+    }
+
+    // Convert input to Date object
+    const inputDate = new Date(dateTime);
+    if (isNaN(inputDate.getTime())) {
+        return res.status(400).json({ message: "Invalid ISO date format." });
+    }
+
+    // Extract date part in YYYY-MM-DD format
+    const datePart = inputDate.toISOString().split("T")[0];
+
+    // Define four time slots
+    const timeSlots = [
+        { label: "09:00 AM", time: "09:00:00" },
+        { label: "12:00 PM", time: "12:00:00" },
+        { label: "02:00 PM", time: "14:00:00" },
+        { label: "06:00 PM", time: "18:00:00" }
+    ];
+
+    // Generate JSON response
+    const response = timeSlots.map(slot => ({
+        label: slot.label,
+        dateTime: `${datePart}T${slot.time}Z`
+    }));
+
+    res.status(200).json(response);
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
