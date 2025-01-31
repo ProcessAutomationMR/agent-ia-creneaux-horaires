@@ -163,7 +163,7 @@ app.post("/execute", (req, res) => {
     }
 });
 
-// Route to convert a given date into 4 separate time slots
+// Route to convert a given date into 2 separate time slots
 app.post('/convert-date', (req, res) => {
     const { date } = req.body;
 
@@ -180,12 +180,10 @@ app.post('/convert-date', (req, res) => {
     // Extract date part in YYYY-MM-DD format
     const datePart = inputDate.toISOString().split("T")[0];
 
-    // Define four time slots
+    // Define 2 time slots
     const timeSlots = [
-        { label: "09:00 AM", time: "09:00:00" },
-        { label: "12:00 PM", time: "12:00:00" },
-        { label: "02:00 PM", time: "14:00:00" },
-        { label: "06:00 PM", time: "18:00:00" }
+        { label: "timeMin", time: "09:00:00" },
+        { label: "timeMax", time: "18:00:00" }
     ];
 
     // Generate JSON response
