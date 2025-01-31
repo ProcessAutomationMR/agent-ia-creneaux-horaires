@@ -163,38 +163,33 @@ app.post("/execute", (req, res) => {
     }
 });
 
-// Route to convert a given date into 2 separate time slots
+
+// Route to convert a given date into fixed start and end times
 app.post('/convert-date', (req, res) => {
     const { date } = req.body;
 
     if (!date) {
-        return res.status(400).json({ message: "Missing 'date' parameter." });
+        return res.status(400).json({ error: "Missing 'date' parameter." });
     }
 
     // Convert input to Date object
     const inputDate = new Date(date);
     if (isNaN(inputDate.getTime())) {
-        return res.status(400).json({ message: "Invalid ISO date format." });
+        return res.status(400).json({ error: "Invalid date format. Please provide a valid ISO date string." });
     }
 
-    // Extract date part in YYYY-MM-DD format
+    // Extract YYYY-MM-DD part from input date
     const datePart = inputDate.toISOString().split("T")[0];
 
-    // Define 2 time slots
-    const timeSlots = [
-        { label: "timeMin", time: "09:00:00" },
-        { label: "timeMax", time: "18:00:00" }
-    ];
+    // Define start and end times
+    const startTime = `${datePart}T09:00:00`;
+    const endTime = `${datePart}T18:00:00`;
 
-    // Generate JSON response
-    const response = timeSlots.map(slot => ({
-        label: slot.label,
-        date: `${datePart}T${slot.time}Z`
-    }));
-
-    res.status(200).json(response);
+    res.status(200).json({
+        startTime: startTime,
+        endTime: endTime
+    });
 });
-
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
