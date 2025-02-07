@@ -149,7 +149,7 @@ app.post("/execute", (req, res) => {
         const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
         return res.json({
             startTime: startTime,
-            endTime: endDate.toISOString()
+            endTime: endDate.toISOString().slice(0, 19)
         });
     }
 
