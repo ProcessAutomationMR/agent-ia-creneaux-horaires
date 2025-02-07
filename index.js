@@ -197,17 +197,26 @@ app.post('/submit-email', async (req, res) => {
   const { clientKey, email } = req.body;
 
   if (!clientKey || !email) {
-    return res.status(400).send('Informations manquantes.');
+    return res.status(400).send('❌ Informations manquantes.');
   }
 
   try {
-    await axios.post('https://hook.eu2.make.com/79tvxf9j8gge5pqnlhcrgyxm58jpxt9v', { clientKey, email });
-    res.send('Merci, votre adresse e-mail a bien été confirmée.');
+    console.log("📤 Sending data to Make.com:", { clientKey, email });
+
+    const response = await axios.post('https://hook.eu2.make.com/ajpzjbry7w7pj3l9oy21q6i4idfhle5r', 
+      { clientKey, email }, 
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    console.log("✅ Webhook Response:", response.status, response.data);
+    res.send('🎉 Merci, votre adresse e-mail a bien été confirmée.');
+
   } catch (error) {
-    console.error('Erreur lors de l\'envoi au webhook :', error);
-    res.status(500).send('Erreur lors de l\'envoi de votre e-mail.');
+    console.error("🚨 Erreur Webhook:", error.response?.status, error.response?.data);
+    res.status(500).send(`❌ Erreur lors de l'envoi de votre e-mail. Détails: ${error.message}`);
   }
 });
+
 
 // Start the server
 app.listen(port, () => {
