@@ -12,6 +12,7 @@ const SECURE_TOKEN = process.env.SECURE_TOKEN;
 // Middleware
 app.use(cors());
 app.use(bodyParser.text({ type: "text/plain" }));
+app.use(express.json());
 
 
 // Define working hours
