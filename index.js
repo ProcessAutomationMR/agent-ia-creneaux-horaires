@@ -20,38 +20,35 @@ const WORKDAY_END = "16:00:00";
 
 // Default route to check server status
 app.get('/', (req, res) => {
-  res.send('Server is running!');
+  res.send('✅ Server is running!');
 });
 
 // Function to check token
 const checkToken = (req, res, next) => {
- const token = req.headers.authorization;
- if (token === SECURE_TOKEN) {
- next();
- } else {
- res.status(401).json({ error: "Unauthorized" });
- }
+  const token = req.headers.authorization;
+  if (token === SECURE_TOKEN) {
+    next();
+  } else {
+    res.status(401).json({ error: "Unauthorized" });
+  }
 };
 
-// Execute endpoint
+// 🔹 Execute endpoint (Secure)
 app.post("/execute", checkToken, (req, res) => {
- const code = req.body;
- if (!code) {
- return res.status(400).json({ error: "No code provided" });
- }
- try {
-   // Execute the code
-   const result = eval(code);
-   res.json({ result });
- } catch (error) {
-   res.status(500).json({ error: error.message, trace: error.stack });
- }
-});
-app.listen(PORT, () => {
- console.log(`Server is running on port ${PORT}`);
+  const code = req.body;
+  if (!code) {
+    return res.status(400).json({ error: "No code provided" });
+  }
+  try {
+    // Execute the code
+    const result = eval(code);
+    res.json({ result });
+  } catch (error) {
+    res.status(500).json({ error: error.message, trace: error.stack });
+  }
 });
 
-// Route to identify free slots
+// 🔹 Route to identify free slots
 app.post('/occupied-slots', (req, res) => {
   const { value: occupiedSlots } = req.body;
 
@@ -92,7 +89,7 @@ app.post('/occupied-slots', (req, res) => {
   res.status(200).json({ free_slots: freeSlots.length ? freeSlots : "0" });
 });
 
-// Route to suggest first three available slots
+// 🔹 Route to suggest first three available slots
 app.post('/suggest-slots', (req, res) => {
   const { free_slots } = req.body;
 
@@ -103,7 +100,7 @@ app.post('/suggest-slots', (req, res) => {
   res.status(200).json({ suggested_slots: free_slots.slice(0, 3) });
 });
 
-// Route to extend slots
+// 🔹 Route to extend slots
 app.post('/extend-slots', (req, res) => {
   const { requested_datetime } = req.body;
 
@@ -131,7 +128,7 @@ app.post('/extend-slots', (req, res) => {
   });
 });
 
-// Route to answer in French
+// 🔹 Route to answer in French
 app.post('/answer', (req, res) => {
   const { suggested_slots } = req.body;
 
@@ -163,7 +160,7 @@ app.post('/answer', (req, res) => {
   res.status(200).send(responseText);
 });
 
-// Start the server
+// ✅ Start the server (Only one instance)
 app.listen(port, () => {
-  console.log(`✅ Server running on port ${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 });
