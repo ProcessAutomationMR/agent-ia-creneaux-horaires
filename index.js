@@ -6,8 +6,6 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// Secure token from environment variable
-const SECURE_TOKEN = process.env.SECURE_TOKEN;
 
 // Middleware
 app.use(cors());
