@@ -10,7 +10,9 @@ const port = process.env.PORT || 10000;
 const SECURE_TOKEN = process.env.SECURE_TOKEN;
 
 // Middleware
-app.use(express.json());
+app.use(cors());
+app.use(bodyParser.text({ type: "text/plain" }));
+
 
 // Define working hours
 const WORKDAY_START = "08:00:00";
