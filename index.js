@@ -1,17 +1,9 @@
 const express = require('express');
-const bodyParser = require("body-parser");
-const axios = require('axios');
-const cors = require('cors');
-
 const app = express();
 const port = process.env.PORT || 10000;
 
-
 // Middleware
-app.use(cors());
-app.use(bodyParser.text({ type: "text/plain" }));
 app.use(express.json());
-
 
 // Define working hours
 const WORKDAY_START = "08:00:00";
@@ -19,35 +11,10 @@ const WORKDAY_END = "16:00:00";
 
 // Default route to check server status
 app.get('/', (req, res) => {
-  res.send('✅ Server is running!');
+  res.send('Server is running!');
 });
 
-// Function to check token
-const checkToken = (req, res, next) => {
-  const token = req.headers.authorization;
-  if (token === SECURE_TOKEN) {
-    next();
-  } else {
-    res.status(401).json({ error: "Unauthorized" });
-  }
-};
-
-// 🔹 Execute endpoint (Secure)
-app.post("/execute", checkToken, (req, res) => {
-  const code = req.body;
-  if (!code) {
-    return res.status(400).json({ error: "No code provided" });
-  }
-  try {
-    // Execute the code
-    const result = eval(code);
-    res.json({ result });
-  } catch (error) {
-    res.status(500).json({ error: error.message, trace: error.stack });
-  }
-});
-
-// 🔹 Route to identify free slots
+// Route to identify free slots
 app.post('/occupied-slots', (req, res) => {
   const { value: occupiedSlots } = req.body;
 
@@ -60,10 +27,9 @@ app.post('/occupied-slots', (req, res) => {
   const workDayEnd = new Date(`${date}T${WORKDAY_END}Z`);
 
   // Sort occupied slots by start time
-  const sortedOccupiedSlots = occupiedSlots.map(slot => ({
-    start: new Date(slot.start),
-    end: new Date(slot.end),
-  })).sort((a, b) => a.start - b.start);
+  const sortedOccupiedSlots = occupiedSlots
+    .map(slot => ({ start: new Date(slot.start), end: new Date(slot.end) }))
+    .sort((a, b) => a.start - b.start);
 
   let freeSlots = [];
   let currentTime = workDayStart;
@@ -78,6 +44,7 @@ app.post('/occupied-slots', (req, res) => {
     currentTime = slot.end > currentTime ? slot.end : currentTime;
   }
 
+  // Check if there is free time after the last occupied slot
   if (currentTime < workDayEnd) {
     freeSlots.push({
       start: currentTime.toISOString(),
@@ -88,7 +55,7 @@ app.post('/occupied-slots', (req, res) => {
   res.status(200).json({ free_slots: freeSlots.length ? freeSlots : "0" });
 });
 
-// 🔹 Route to suggest first three available slots
+// Route to suggest the first three available slots
 app.post('/suggest-slots', (req, res) => {
   const { free_slots } = req.body;
 
@@ -99,7 +66,7 @@ app.post('/suggest-slots', (req, res) => {
   res.status(200).json({ suggested_slots: free_slots.slice(0, 3) });
 });
 
-// 🔹 Route to extend slots
+// Route to extend a slot to the next working day
 app.post('/extend-slots', (req, res) => {
   const { requested_datetime } = req.body;
 
@@ -112,6 +79,7 @@ app.post('/extend-slots', (req, res) => {
     return res.status(400).json({ message: "Invalid input, 'requested_datetime' must be a valid ISO date." });
   }
 
+  // Move to the next day and skip weekends
   requestedDate.setUTCDate(requestedDate.getUTCDate() + 1);
   while (requestedDate.getUTCDay() === 6 || requestedDate.getUTCDay() === 0) {
     requestedDate.setUTCDate(requestedDate.getUTCDate() + 1);
@@ -127,7 +95,7 @@ app.post('/extend-slots', (req, res) => {
   });
 });
 
-// 🔹 Route to answer in French
+// Route to convert time slots to UTC+1 and generate a French response
 app.post('/answer', (req, res) => {
   const { suggested_slots } = req.body;
 
@@ -136,7 +104,7 @@ app.post('/answer', (req, res) => {
   }
 
   let responseText = '';
-
+  
   suggested_slots.forEach((slot, index) => {
     const startDate = new Date(slot.start);
     const endDate = new Date(slot.end);
@@ -159,7 +127,70 @@ app.post('/answer', (req, res) => {
   res.status(200).send(responseText);
 });
 
-// ✅ Start the server (Only one instance)
+// Execute Endpoint: Handles both "code" execution and "startTime" conversion
+app.post("/execute", (req, res) => {
+    console.log("DEBUG: Received request body:", req.body); // Debugging log
+
+    const { code, startTime } = req.body;
+
+    if (!code && !startTime) {
+        console.log("DEBUG: Missing parameters - code & startTime are both missing");
+        return res.status(400).json({ error: "Missing required parameters: either 'code' or 'startTime' must be provided." });
+    }
+
+    // If 'startTime' is provided, convert it into an end time
+    if (startTime) {
+        const startDate = new Date(startTime);
+        if (isNaN(startDate.getTime())) {
+            console.log("DEBUG: Invalid startTime format:", startTime);
+            return res.status(400).json({ error: "Invalid ISO format for 'startTime'." });
+        }
+
+        const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+        return res.json({
+            startTime: startTime,
+            endTime: endDate.toISOString().slice(0, 19)
+        });
+    }
+
+    // If 'code' is provided, execute it safely
+    try {
+        const safeFunction = new Function(`"use strict"; return (${code})`);
+        const result = safeFunction();
+        return res.json({ result });
+    } catch (error) {
+        return res.status(500).json({ error: error.message, trace: error.stack });
+    }
+});
+
+
+// Route to convert a given date into fixed start and end times
+app.post('/convert-date', (req, res) => {
+    const { date } = req.body;
+
+    if (!date) {
+        return res.status(400).json({ error: "Missing 'date' parameter." });
+    }
+
+    // Convert input to Date object
+    const inputDate = new Date(date);
+    if (isNaN(inputDate.getTime())) {
+        return res.status(400).json({ error: "Invalid date format. Please provide a valid ISO date string." });
+    }
+
+    // Extract YYYY-MM-DD part from input date
+    const datePart = inputDate.toISOString().split("T")[0];
+
+    // Define start and end times
+    const startTime = `${datePart}T09:00:00`;
+    const endTime = `${datePart}T18:00:00`;
+
+    res.status(200).json({
+        startTime: startTime,
+        endTime: endTime
+    });
+});
+// Start the server
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
