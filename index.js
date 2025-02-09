@@ -205,12 +205,14 @@ app.post('/convert-date-months', (req, res) => {
         return res.status(400).json({ error: "Invalid date format. Please provide a valid ISO date string." });
     }
 
-    // Define start date as received date
+    // Define start date with fixed time 10:00:00
+    inputDate.setHours(10, 0, 0, 0);
     const startDate = inputDate.toISOString();
 
-    // Calculate end date (3 months later)
+    // Calculate end date (3 months later) with fixed time 10:00:00
     const endDate = new Date(inputDate);
     endDate.setMonth(endDate.getMonth() + 3);
+    endDate.setHours(10, 0, 0, 0);
     const formattedEndDate = endDate.toISOString();
 
     res.status(200).json({
