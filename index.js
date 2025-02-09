@@ -1,7 +1,6 @@
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 10000;
-const parseISO = (isoString) => new Date(isoString);
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
@@ -12,7 +11,10 @@ const WORKDAY_END = "18:00:00";
 const WORKING_HOURS = [
   { start: 9, end: 12 },
   { start: 14, end: 18 }
-});
+];
+
+// Function to parse ISO date
+const parseISO = (isoString) => new Date(isoString);
 
 // Default route to check server status
 app.get('/', (req, res) => {
