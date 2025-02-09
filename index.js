@@ -6,8 +6,8 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 
 // Define working hours
-const WORKDAY_START = "08:00:00Z";
-const WORKDAY_END = "17:00:00Z";
+const WORKDAY_START = "09:00:00Z";
+const WORKDAY_END = "18:00:00Z";
 const WORKING_HOURS = [
   { start: 9, end: 12 },
   { start: 14, end: 18 }
