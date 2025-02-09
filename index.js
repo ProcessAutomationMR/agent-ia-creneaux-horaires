@@ -106,20 +106,26 @@ app.post('/non-occupied-slots', (req, res) => {
         if (slot.start >= workEnd) break;
 
         if (currentTime < slot.start) {
-          availableSlots.push({
-            startDate: currentTime.toISOString().slice(0, 19),
-            endDate: new Date(Math.min(slot.start, workEnd)).toISOString().slice(0, 19)
-          });
+          // 🔥 Ensure slots do not start before 9 AM
+          if (currentTime.getHours() >= 9) {
+            availableSlots.push({
+              startDate: currentTime.toISOString().slice(0, 19),
+              endDate: new Date(Math.min(slot.start, workEnd)).toISOString().slice(0, 19)
+            });
+          }
         }
 
         currentTime = new Date(Math.max(currentTime, slot.end));
       }
 
       if (currentTime < workEnd) {
-        availableSlots.push({
-          startDate: currentTime.toISOString().slice(0, 19),
-          endDate: workEnd.toISOString().slice(0, 19)
-        });
+        // 🔥 Ensure slots do not start before 9 AM
+        if (currentTime.getHours() >= 9) {
+          availableSlots.push({
+            startDate: currentTime.toISOString().slice(0, 19),
+            endDate: workEnd.toISOString().slice(0, 19)
+          });
+        }
       }
     });
   });
