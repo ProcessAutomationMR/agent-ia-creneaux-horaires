@@ -108,14 +108,17 @@ app.post('/non-occupied-slots', (req, res) => {
       let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00+01:00`); // GMT+1
       let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00+01:00`); // GMT+1
 
-      let currentTime = workStart; // 🔹 Ensure it starts at the working hours boundary
+      let currentTime = workStart; // 🔹 Explicitly set it to workStart
 
       for (let slot of busySlots) {
         if (slot.start >= workEnd) break;
 
         if (currentTime < slot.start) {
+          // 🚨 Ensuring the first slot does not start before workStart
+          let validStart = new Date(Math.max(currentTime.getTime(), workStart.getTime()));
+
           availableSlots.push({
-            startDate: new Date(Math.max(currentTime, workStart)).toISOString().slice(0, 19), // 🔹 Ensures we start at workStart
+            startDate: validStart.toISOString().slice(0, 19),
             endDate: new Date(Math.min(slot.start, workEnd)).toISOString().slice(0, 19)
           });
         }
@@ -125,7 +128,7 @@ app.post('/non-occupied-slots', (req, res) => {
 
       if (currentTime < workEnd) {
         availableSlots.push({
-          startDate: new Date(Math.max(currentTime, workStart)).toISOString().slice(0, 19), // 🔹 Prevents slots before working hours
+          startDate: new Date(Math.max(currentTime.getTime(), workStart.getTime())).toISOString().slice(0, 19),
           endDate: workEnd.toISOString().slice(0, 19)
         });
       }
