@@ -6,8 +6,8 @@ const port = process.env.PORT || 10000;
 app.use(express.json());
 
 // Define working hours
-const WORKDAY_START = "08:00:00";
-const WORKDAY_END = "16:00:00";
+const WORKDAY_START = "09:00:00";
+const WORKDAY_END = "18:00:00";
 
 // Default route to check server status
 app.get('/', (req, res) => {
@@ -74,8 +74,19 @@ app.post('/suggest-slots-enhanced', (req, res) => {
     return res.status(400).json({ message: "Invalid input, 'free_slots' is required and should contain an array of slots." });
   }
 
-  // Extract first three slots
-  const suggestedSlots = free_slots.slice(0, 3);
+  // Define working hours
+  const WORKING_HOURS = [
+    { start: 9, end: 12 },
+    { start: 14, end: 18 }
+  ];
+
+  // Extract first three valid slots within working hours
+  const suggestedSlots = free_slots
+    .filter(slot => {
+      const startHour = new Date(slot.start).getHours();
+      return WORKING_HOURS.some(({ start, end }) => start <= startHour && startHour < end);
+    })
+    .slice(0, 3);
 
   // Function to format date
   const formatDate = (dateStr) => {
