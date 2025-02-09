@@ -144,6 +144,10 @@ app.post('/suggest-slots', (req, res) => {
   res.status(200).json({ suggested_slots: free_slots.slice(0, 3) });
 });
 
+
+
+
+
 // Route to suggest the first three available slots
 app.post('/suggest-slots-enhanced', (req, res) => {
   const { free_slots } = req.body;
@@ -161,23 +165,27 @@ app.post('/suggest-slots-enhanced', (req, res) => {
   // Extract first three valid slots within working hours
   const suggestedSlots = free_slots
     .filter(slot => {
-      const startHour = new Date(slot.start).getHours();
-      return WORKING_HOURS.some(({ start, end }) => start <= startHour && startHour < end);
+      const startHour = new Date(slot.startDate).getUTCHours();
+      const endHour = new Date(slot.endDate).getUTCHours();
+      
+      return WORKING_HOURS.some(({ start, end }) => 
+        (start <= startHour && startHour < end) || (start < endHour && endHour <= end)
+      );
     })
     .slice(0, 3);
 
-  // Function to format date
+  // Function to format date in French
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
-    const options = { day: 'numeric', month: 'long' };
-    return date.toLocaleDateString('fr-FR', options);
+    return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   };
 
   // Group slots by date
   const slotsByDate = {};
   suggestedSlots.forEach(slot => {
-    const date = formatDate(slot.start);
-    const timeRange = `${new Date(slot.start).getHours()}h à ${new Date(slot.end).getHours()}h`;
+    const date = formatDate(slot.startDate);
+    const timeRange = `${new Date(slot.startDate).getUTCHours()}h à ${new Date(slot.endDate).getUTCHours()}h`;
+    
     if (!slotsByDate[date]) {
       slotsByDate[date] = [];
     }
@@ -189,10 +197,15 @@ app.post('/suggest-slots-enhanced', (req, res) => {
     return `le ${date} de ${times.join(' ou ')}`;
   });
 
-  const responseMessage = slotMessages.join(' ou ');
+  const responseMessage = slotMessages.length > 0 ? slotMessages.join(' ou ') : "Aucune disponibilité trouvée.";
 
   res.status(200).json({ suggested_slots: responseMessage });
 });
+
+
+
+
+
 
 // Route to extend a slot to the next working day
 app.post('/extend-slots', (req, res) => {
