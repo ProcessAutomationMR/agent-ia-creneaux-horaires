@@ -8,6 +8,9 @@ app.use(express.json());
 // Define working hours
 const WORKDAY_START = "09:00:00";
 const WORKDAY_END = "18:00:00";
+const WORKING_HOURS = [
+  { start: 9, end: 12 },
+  { start: 14, end: 18 }
 });
 
 // Default route to check server status
