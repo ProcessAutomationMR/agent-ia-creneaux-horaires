@@ -5,14 +5,16 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 
-// Routes
-app.get('/', (req, res) => {
-  res.send('Server is running!');
-});
+// Import routes from index.js
+const routes = require('./index');
+app.use('/api', routes);  // Adjust base route if necessary
 
-// Add your other routes here...
+// Default route to check if the server is running
+app.get('/', (req, res) => {
+  res.send('✅ Server is running!');
+});
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`✅ Server is running on port ${port}`);
 });
