@@ -66,6 +66,45 @@ app.post('/suggest-slots', (req, res) => {
   res.status(200).json({ suggested_slots: free_slots.slice(0, 3) });
 });
 
+// Route to suggest the first three available slots
+app.post('/suggest-slots-enhanced', (req, res) => {
+  const { free_slots } = req.body;
+
+  if (!free_slots || !Array.isArray(free_slots) || free_slots.length === 0) {
+    return res.status(400).json({ message: "Invalid input, 'free_slots' is required and should contain an array of slots." });
+  }
+
+  // Extract first three slots
+  const suggestedSlots = free_slots.slice(0, 3);
+
+  // Function to format date
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const options = { day: 'numeric', month: 'long' };
+    return date.toLocaleDateString('fr-FR', options);
+  };
+
+  // Group slots by date
+  const slotsByDate = {};
+  suggestedSlots.forEach(slot => {
+    const date = formatDate(slot.start);
+    const timeRange = `${new Date(slot.start).getHours()}h à ${new Date(slot.end).getHours()}h`;
+    if (!slotsByDate[date]) {
+      slotsByDate[date] = [];
+    }
+    slotsByDate[date].push(timeRange);
+  });
+
+  // Build response message
+  const slotMessages = Object.entries(slotsByDate).map(([date, times]) => {
+    return `le ${date} de ${times.join(' ou ')}`;
+  });
+
+  const responseMessage = slotMessages.join(' ou ');
+
+  res.status(200).json({ suggested_slots: responseMessage });
+});
+
 // Route to extend a slot to the next working day
 app.post('/extend-slots', (req, res) => {
   const { requested_datetime } = req.body;
