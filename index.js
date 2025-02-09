@@ -73,11 +73,11 @@ app.post('/non-occupied-slots', (req, res) => {
 
   let availableSlots = [];
 
-  // Convert occupied slots to Date objects and group by date
+  // Convert occupied slots to Date objects (Convert from GMT to GMT+1)
   const occupiedByDay = {};
   occupiedSlots.forEach(slot => {
-    const slotStart = new Date(slot.start);
-    const slotEnd = new Date(slot.end);
+    const slotStart = new Date(new Date(slot.start).getTime() + 60 * 60 * 1000); // Convert from GMT → GMT+1
+    const slotEnd = new Date(new Date(slot.end).getTime() + 60 * 60 * 1000); // Convert from GMT → GMT+1
     const slotDate = slotStart.toISOString().split("T")[0];
 
     if (!occupiedByDay[slotDate]) {
@@ -97,8 +97,8 @@ app.post('/non-occupied-slots', (req, res) => {
     if (dayOfWeek === 6 || dayOfWeek === 0) return;
 
     WORKING_HOURS.forEach(({ start, end }) => {
-      let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00Z`);
-      let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00Z`);
+      let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00+01:00`); // GMT+1
+      let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00+01:00`); // GMT+1
 
       let currentTime = workStart;
 
