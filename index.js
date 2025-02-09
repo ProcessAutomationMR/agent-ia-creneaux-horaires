@@ -63,7 +63,10 @@ app.post('/occupied-slots', (req, res) => {
 });
 
 
+
+
 // Function to find non-occupied slots within working hours
+// Express.js endpoint to find non-occupied slots within working hours
 app.post('/non-occupied-slots', (req, res) => {
   const { value: occupiedSlots } = req.body;
 
@@ -72,9 +75,9 @@ app.post('/non-occupied-slots', (req, res) => {
   }
 
   let availableSlots = [];
-
-  // Convert occupied slots to Date objects (Convert from GMT to GMT+1)
   const occupiedByDay = {};
+
+  // Convert occupied slots to Date objects (Corrected for GMT+1)
   occupiedSlots.forEach(slot => {
     const slotStart = new Date(new Date(slot.start).getTime() + 60 * 60 * 1000); // Convert from GMT → GMT+1
     const slotEnd = new Date(new Date(slot.end).getTime() + 60 * 60 * 1000); // Convert from GMT → GMT+1
@@ -86,10 +89,15 @@ app.post('/non-occupied-slots', (req, res) => {
     occupiedByDay[slotDate].push({ start: slotStart, end: slotEnd });
   });
 
+  // Define working hours in GMT+1
+  const WORKING_HOURS = [
+    { start: 9, end: 12 }, // 09:00 - 12:00
+    { start: 14, end: 18 } // 14:00 - 18:00
+  ];
+
   // Process each day's occupied slots
   Object.keys(occupiedByDay).forEach(date => {
     const busySlots = occupiedByDay[date].sort((a, b) => a.start - b.start);
-
     let dateObj = new Date(date);
     let dayOfWeek = dateObj.getUTCDay(); // 0 = Sunday, 6 = Saturday
 
