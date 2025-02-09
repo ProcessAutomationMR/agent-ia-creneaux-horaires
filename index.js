@@ -56,7 +56,7 @@ app.post('/occupied-slots', (req, res) => {
 });
 
 // Route to identify occupied slots within working hours
-app.post('/occupied-slots-enhanced', (req, res) => {
+app.post('/non-occupied-slots', (req, res) => {
   const { value: occupiedSlots } = req.body;
 
   if (!occupiedSlots || !Array.isArray(occupiedSlots) || occupiedSlots.length === 0) {
@@ -69,14 +69,45 @@ app.post('/occupied-slots-enhanced', (req, res) => {
     { start: 14, end: 18 }
   ];
 
-  // Filter occupied slots within working hours
-  const filteredOccupiedSlots = occupiedSlots.filter(slot => {
+  const date = occupiedSlots[0].start.split("T")[0];
+  const workDayStart = new Date(`${date}T09:00:00Z`);
+  const workDayEnd = new Date(`${date}T18:00:00Z`);
+
+  // Sort occupied slots by start time
+  const sortedOccupiedSlots = occupiedSlots
+    .map(slot => ({ start: new Date(slot.start), end: new Date(slot.end) }))
+    .sort((a, b) => a.start - b.start);
+
+  let availableSlots = [];
+  let currentTime = workDayStart;
+
+  for (const slot of sortedOccupiedSlots) {
+    if (currentTime < slot.start) {
+      availableSlots.push({
+        start: currentTime.toISOString(),
+        end: slot.start.toISOString(),
+      });
+    }
+    currentTime = slot.end > currentTime ? slot.end : currentTime;
+  }
+
+  // Check if there is free time after the last occupied slot
+  if (currentTime < workDayEnd) {
+    availableSlots.push({
+      start: currentTime.toISOString(),
+      end: workDayEnd.toISOString(),
+    });
+  }
+
+  // Filter available slots within working hours
+  availableSlots = availableSlots.filter(slot => {
     const startHour = new Date(slot.start).getHours();
     return WORKING_HOURS.some(({ start, end }) => start <= startHour && startHour < end);
   });
 
-  res.status(200).json({ occupied_slots: filteredOccupiedSlots.length ? filteredOccupiedSlots : "0" });
+  res.status(200).json({ available_slots: availableSlots.length ? availableSlots : "0" });
 });
+
 
 
 
