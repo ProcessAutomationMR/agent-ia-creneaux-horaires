@@ -89,25 +89,31 @@ app.post('/non-occupied-slots', (req, res) => {
   // Process each day's occupied slots
   Object.keys(occupiedByDay).forEach(date => {
     const busySlots = occupiedByDay[date].sort((a, b) => a.start - b.start);
-    
+
+    let dateObj = new Date(date);
+    let dayOfWeek = dateObj.getUTCDay(); // 0 = Sunday, 6 = Saturday
+
+    // 🚨 Skip weekends (Saturday & Sunday)
+    if (dayOfWeek === 6 || dayOfWeek === 0) return;
+
     let freePeriods = [];
-    
+
     WORKING_HOURS.forEach(({ start, end }) => {
       let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00Z`);
       let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00Z`);
-      
+
       let currentTime = workStart;
-      
+
       for (let slot of busySlots) {
         if (slot.start >= workEnd) break;
-        
+
         if (currentTime < slot.start) {
           freePeriods.push({ start: currentTime, end: new Date(Math.min(slot.start, workEnd)) });
         }
-        
+
         currentTime = new Date(Math.max(currentTime, slot.end));
       }
-      
+
       if (currentTime < workEnd) {
         freePeriods.push({ start: currentTime, end: workEnd });
       }
@@ -123,7 +129,7 @@ app.post('/non-occupied-slots', (req, res) => {
     const readableDate = new Date(date).toLocaleDateString("fr-FR", {
       weekday: 'long', day: 'numeric', month: 'long'
     });
-    
+
     const timeSlots = slots.map(slot => {
       return `${slot.start.getUTCHours()}h à ${slot.end.getUTCHours()}h`;
     });
