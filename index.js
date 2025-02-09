@@ -77,10 +77,10 @@ app.post('/non-occupied-slots', (req, res) => {
   let availableSlots = [];
   const occupiedByDay = {};
 
-  // Convert occupied slots to Date objects (Corrected for GMT+1)
+  // Convert occupied slots to Date objects and adjust from GMT to GMT+1
   occupiedSlots.forEach(slot => {
-    const slotStart = new Date(new Date(slot.start).getTime() + 60 * 60 * 1000); // Convert from GMT → GMT+1
-    const slotEnd = new Date(new Date(slot.end).getTime() + 60 * 60 * 1000); // Convert from GMT → GMT+1
+    const slotStart = new Date(new Date(slot.start).getTime() + 60 * 60 * 1000); // Convert to GMT+1
+    const slotEnd = new Date(new Date(slot.end).getTime() + 60 * 60 * 1000); // Convert to GMT+1
     const slotDate = slotStart.toISOString().split("T")[0];
 
     if (!occupiedByDay[slotDate]) {
@@ -108,14 +108,14 @@ app.post('/non-occupied-slots', (req, res) => {
       let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00+01:00`); // GMT+1
       let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00+01:00`); // GMT+1
 
-      let currentTime = workStart;
+      let currentTime = workStart; // 🔹 Ensure it starts at the working hours boundary
 
       for (let slot of busySlots) {
         if (slot.start >= workEnd) break;
 
         if (currentTime < slot.start) {
           availableSlots.push({
-            startDate: currentTime.toISOString().slice(0, 19),
+            startDate: new Date(Math.max(currentTime, workStart)).toISOString().slice(0, 19), // 🔹 Ensures we start at workStart
             endDate: new Date(Math.min(slot.start, workEnd)).toISOString().slice(0, 19)
           });
         }
@@ -125,7 +125,7 @@ app.post('/non-occupied-slots', (req, res) => {
 
       if (currentTime < workEnd) {
         availableSlots.push({
-          startDate: currentTime.toISOString().slice(0, 19),
+          startDate: new Date(Math.max(currentTime, workStart)).toISOString().slice(0, 19), // 🔹 Prevents slots before working hours
           endDate: workEnd.toISOString().slice(0, 19)
         });
       }
