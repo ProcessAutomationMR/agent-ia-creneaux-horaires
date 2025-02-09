@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 10000;
+const parseISO = (isoString) => new Date(isoString);
 
 // Middleware
 app.use(express.json());
@@ -63,8 +64,6 @@ app.post('/occupied-slots', (req, res) => {
 // Function to find non-occupied slots within working hours
 app.post('/non-occupied-slots', (req, res) => {
   const { value: occupiedSlots } = req.body;
-  const parseISO = (isoString) => new Date(isoString);
-
 
   if (!occupiedSlots || !Array.isArray(occupiedSlots) || occupiedSlots.length === 0) {
     return res.status(400).json({ message: "Invalid input, 'value' is required and should contain slots." });
