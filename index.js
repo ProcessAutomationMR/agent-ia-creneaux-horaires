@@ -71,8 +71,8 @@ app.post('/non-occupied-slots', (req, res) => {
     return res.status(400).json({ message: "Invalid input, 'value' is required and should contain slots." });
   }
 
-  let availableSlots = {};
-  
+  let availableSlots = [];
+
   // Convert occupied slots to Date objects and group by date
   const occupiedByDay = {};
   occupiedSlots.forEach(slot => {
@@ -96,8 +96,6 @@ app.post('/non-occupied-slots', (req, res) => {
     // 🚨 Skip weekends (Saturday & Sunday)
     if (dayOfWeek === 6 || dayOfWeek === 0) return;
 
-    let freePeriods = [];
-
     WORKING_HOURS.forEach(({ start, end }) => {
       let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00Z`);
       let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00Z`);
@@ -108,37 +106,28 @@ app.post('/non-occupied-slots', (req, res) => {
         if (slot.start >= workEnd) break;
 
         if (currentTime < slot.start) {
-          freePeriods.push({ start: currentTime, end: new Date(Math.min(slot.start, workEnd)) });
+          availableSlots.push({
+            startDate: currentTime.toISOString().slice(0, 19),
+            endDate: new Date(Math.min(slot.start, workEnd)).toISOString().slice(0, 19)
+          });
         }
 
         currentTime = new Date(Math.max(currentTime, slot.end));
       }
 
       if (currentTime < workEnd) {
-        freePeriods.push({ start: currentTime, end: workEnd });
+        availableSlots.push({
+          startDate: currentTime.toISOString().slice(0, 19),
+          endDate: workEnd.toISOString().slice(0, 19)
+        });
       }
     });
-
-    if (freePeriods.length > 0) {
-      availableSlots[date] = freePeriods;
-    }
   });
 
-  // Convert to readable format
-  const formattedSlots = Object.entries(availableSlots).map(([date, slots]) => {
-    const readableDate = new Date(date).toLocaleDateString("fr-FR", {
-      weekday: 'long', day: 'numeric', month: 'long'
-    });
-
-    const timeSlots = slots.map(slot => {
-      return `${slot.start.getUTCHours()}h à ${slot.end.getUTCHours()}h`;
-    });
-
-    return `${readableDate} de ${timeSlots.join(" ou ")}`;
-  });
-
-  res.status(200).json({ available_slots: formattedSlots.length ? formattedSlots : "0" });
+  // Return only the first 3 slots
+  res.status(200).json({ available_slots: availableSlots.slice(0, 3) });
 });
+
 
 
 
