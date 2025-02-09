@@ -55,6 +55,31 @@ app.post('/occupied-slots', (req, res) => {
   res.status(200).json({ free_slots: freeSlots.length ? freeSlots : "0" });
 });
 
+// Route to identify occupied slots within working hours
+app.post('/occupied-slots-enhanced', (req, res) => {
+  const { value: occupiedSlots } = req.body;
+
+  if (!occupiedSlots || !Array.isArray(occupiedSlots) || occupiedSlots.length === 0) {
+    return res.status(400).json({ message: "Invalid input, 'value' is required and should contain slots." });
+  }
+
+  // Define working hours
+  const WORKING_HOURS = [
+    { start: 9, end: 12 },
+    { start: 14, end: 18 }
+  ];
+
+  // Filter occupied slots within working hours
+  const filteredOccupiedSlots = occupiedSlots.filter(slot => {
+    const startHour = new Date(slot.start).getHours();
+    return WORKING_HOURS.some(({ start, end }) => start <= startHour && startHour < end);
+  });
+
+  res.status(200).json({ occupied_slots: filteredOccupiedSlots.length ? filteredOccupiedSlots : "0" });
+});
+
+
+
 // Route to suggest the first three available slots
 app.post('/suggest-slots', (req, res) => {
   const { free_slots } = req.body;
