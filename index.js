@@ -30,8 +30,8 @@ app.post('/occupied-slots', (req, res) => {
   }
 
   const date = occupiedSlots[0].start.split("T")[0];
-  const workDayStart = new Date(`${date}T${WORKDAY_START}Z`);
-  const workDayEnd = new Date(`${date}T${WORKDAY_END}Z`);
+  const workDayStart = new Date(${date}T${WORKDAY_START}Z);
+  const workDayEnd = new Date(${date}T${WORKDAY_END}Z);
 
   // Sort occupied slots by start time
   const sortedOccupiedSlots = occupiedSlots
@@ -73,11 +73,11 @@ app.post('/non-occupied-slots', (req, res) => {
 
   let availableSlots = [];
 
-  // Convert occupied slots to Date objects (from GMT to GMT+1)
+  // Convert occupied slots to Date objects and group by date
   const occupiedByDay = {};
   occupiedSlots.forEach(slot => {
-    const slotStart = new Date(new Date(slot.start).getTime() + 60 * 60 * 1000); // Convert GMT → GMT+1
-    const slotEnd = new Date(new Date(slot.end).getTime() + 60 * 60 * 1000); // Convert GMT → GMT+1
+    const slotStart = new Date(slot.start);
+    const slotEnd = new Date(slot.end);
     const slotDate = slotStart.toISOString().split("T")[0];
 
     if (!occupiedByDay[slotDate]) {
@@ -97,8 +97,8 @@ app.post('/non-occupied-slots', (req, res) => {
     if (dayOfWeek === 6 || dayOfWeek === 0) return;
 
     WORKING_HOURS.forEach(({ start, end }) => {
-      let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00+01:00`); // GMT+1
-      let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00+01:00`); // GMT+1
+      let workStart = new Date(${date}T${String(start).padStart(2, '0')}:00:00Z);
+      let workEnd = new Date(${date}T${String(end).padStart(2, '0')}:00:00Z);
 
       let currentTime = workStart;
 
@@ -127,7 +127,6 @@ app.post('/non-occupied-slots', (req, res) => {
   // Return only the first 3 slots
   res.status(200).json({ available_slots: availableSlots.slice(0, 3) });
 });
-
 
 
 
@@ -165,13 +164,9 @@ app.post('/suggest-slots-enhanced', (req, res) => {
 
   // Extract first three valid slots within working hours
   const suggestedSlots = free_slots
-    .map(slot => ({
-      startDate: new Date(new Date(slot.startDate).getTime() + 60 * 60 * 1000), // Convert GMT → GMT+1
-      endDate: new Date(new Date(slot.endDate).getTime() + 60 * 60 * 1000) // Convert GMT → GMT+1
-    }))
     .filter(slot => {
-      const startHour = slot.startDate.getUTCHours();
-      const endHour = slot.endDate.getUTCHours();
+      const startHour = new Date(slot.startDate).getUTCHours();
+      const endHour = new Date(slot.endDate).getUTCHours();
       
       return WORKING_HOURS.some(({ start, end }) => 
         (start <= startHour && startHour < end) || (start < endHour && endHour <= end)
@@ -189,7 +184,7 @@ app.post('/suggest-slots-enhanced', (req, res) => {
   const slotsByDate = {};
   suggestedSlots.forEach(slot => {
     const date = formatDate(slot.startDate);
-    const timeRange = `${slot.startDate.getUTCHours()}h à ${slot.endDate.getUTCHours()}h`;
+    const timeRange = ${new Date(slot.startDate).getUTCHours()}h à ${new Date(slot.endDate).getUTCHours()}h;
     
     if (!slotsByDate[date]) {
       slotsByDate[date] = [];
@@ -199,14 +194,13 @@ app.post('/suggest-slots-enhanced', (req, res) => {
 
   // Build response message
   const slotMessages = Object.entries(slotsByDate).map(([date, times]) => {
-    return `le ${date} de ${times.join(' ou ')}`;
+    return le ${date} de ${times.join(' ou ')};
   });
 
   const responseMessage = slotMessages.length > 0 ? slotMessages.join(' ou ') : "Aucune disponibilité trouvée.";
 
   res.status(200).json({ suggested_slots: responseMessage });
 });
-
 
 
 
@@ -221,7 +215,7 @@ app.post('/extend-slots', (req, res) => {
     return res.status(400).json({ message: "Invalid input, 'requested_datetime' is required." });
   }
 
-  let requestedDate = new Date(`${requested_datetime}Z`);
+  let requestedDate = new Date(${requested_datetime}Z);
   if (isNaN(requestedDate.getTime())) {
     return res.status(400).json({ message: "Invalid input, 'requested_datetime' must be a valid ISO date." });
   }
@@ -237,8 +231,8 @@ app.post('/extend-slots', (req, res) => {
   const day = String(requestedDate.getUTCDate()).padStart(2, '0');
 
   res.status(200).json({
-    start: `${year}-${month}-${day}T08:00:00Z`,
-    end: `${year}-${month}-${day}T16:00:00Z`,
+    start: ${year}-${month}-${day}T08:00:00Z,
+    end: ${year}-${month}-${day}T16:00:00Z,
   });
 });
 
@@ -265,9 +259,9 @@ app.post('/answer', (req, res) => {
     const endHour = endUTCPlus1.getUTCHours();
 
     if (index === 0) {
-      responseText += `le ${day} ${month} de ${startHour} heures à ${endHour} heures`;
+      responseText += le ${day} ${month} de ${startHour} heures à ${endHour} heures;
     } else {
-      responseText += ` et de ${startHour} heures à ${endHour} heures`;
+      responseText +=  et de ${startHour} heures à ${endHour} heures;
     }
   });
 
@@ -302,7 +296,7 @@ app.post("/execute", (req, res) => {
 
     // If 'code' is provided, execute it safely
     try {
-        const safeFunction = new Function(`"use strict"; return (${code})`);
+        const safeFunction = new Function("use strict"; return (${code}));
         const result = safeFunction();
         return res.json({ result });
     } catch (error) {
@@ -329,8 +323,8 @@ app.post('/convert-date', (req, res) => {
     const datePart = inputDate.toISOString().split("T")[0];
 
     // Define start and end times
-    const startTime = `${datePart}T09:00:00`;
-    const endTime = `${datePart}T18:00:00`;
+    const startTime = ${datePart}T09:00:00;
+    const endTime = ${datePart}T18:00:00;
 
     res.status(200).json({
         startTime: startTime,
@@ -382,5 +376,5 @@ app.post('/convert-date-months', (req, res) => {
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(Server running on port ${port});
 });
