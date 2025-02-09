@@ -69,40 +69,24 @@ app.post('/non-occupied-slots', (req, res) => {
     { start: 14, end: 18 }
   ];
 
-  const date = occupiedSlots[0].start.split("T")[0];
-  const workDayStart = new Date(`${date}T09:00:00Z`);
-  const workDayEnd = new Date(`${date}T18:00:00Z`);
-
-  // Sort occupied slots by start time
-  const sortedOccupiedSlots = occupiedSlots
-    .map(slot => ({ start: new Date(slot.start), end: new Date(slot.end) }))
-    .sort((a, b) => a.start - b.start);
-
   let availableSlots = [];
-  let currentTime = workDayStart;
 
-  for (const slot of sortedOccupiedSlots) {
-    if (currentTime < slot.start) {
-      availableSlots.push({
-        start: currentTime.toISOString(),
-        end: slot.start.toISOString(),
-      });
-    }
-    currentTime = slot.end > currentTime ? slot.end : currentTime;
-  }
+  occupiedSlots.forEach(slot => {
+    const slotStart = new Date(slot.start);
+    const slotEnd = new Date(slot.end);
+    const slotDate = slotStart.toISOString().split('T')[0];
 
-  // Check if there is free time after the last occupied slot
-  if (currentTime < workDayEnd) {
-    availableSlots.push({
-      start: currentTime.toISOString(),
-      end: workDayEnd.toISOString(),
+    WORKING_HOURS.forEach(({ start, end }) => {
+      const workStart = new Date(`${slotDate}T${String(start).padStart(2, '0')}:00:00Z`);
+      const workEnd = new Date(`${slotDate}T${String(end).padStart(2, '0')}:00:00Z`);
+      
+      if (slotStart > workStart && slotStart < workEnd) {
+        availableSlots.push({ start: workStart.toISOString(), end: slotStart.toISOString() });
+      }
+      if (slotEnd > workStart && slotEnd < workEnd) {
+        availableSlots.push({ start: slotEnd.toISOString(), end: workEnd.toISOString() });
+      }
     });
-  }
-
-  // Filter available slots within working hours
-  availableSlots = availableSlots.filter(slot => {
-    const startHour = new Date(slot.start).getHours();
-    return WORKING_HOURS.some(({ start, end }) => start <= startHour && startHour < end);
   });
 
   res.status(200).json({ available_slots: availableSlots.length ? availableSlots : "0" });
