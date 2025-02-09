@@ -190,6 +190,36 @@ app.post('/convert-date', (req, res) => {
         endTime: endTime
     });
 });
+
+// Route to convert a given date into fixed start and end times
+app.post('/convert-date-months', (req, res) => {
+    const { date } = req.body;
+
+    if (!date) {
+        return res.status(400).json({ error: "Missing 'date' parameter." });
+    }
+
+    // Convert input to Date object
+    const inputDate = new Date(date);
+    if (isNaN(inputDate.getTime())) {
+        return res.status(400).json({ error: "Invalid date format. Please provide a valid ISO date string." });
+    }
+
+    // Define start date as received date
+    const startDate = inputDate.toISOString();
+
+    // Calculate end date (3 months later)
+    const endDate = new Date(inputDate);
+    endDate.setMonth(endDate.getMonth() + 3);
+    const formattedEndDate = endDate.toISOString();
+
+    res.status(200).json({
+        startDate: startDate,
+        endDate: formattedEndDate
+    });
+});
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
