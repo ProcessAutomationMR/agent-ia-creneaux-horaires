@@ -205,21 +205,32 @@ app.post('/convert-date-months', (req, res) => {
         return res.status(400).json({ error: "Invalid date format. Please provide a valid ISO date string." });
     }
 
+    // Define function to format date as 'YYYY-MM-DDTHH:MM:SS'
+    const formatDateTime = (dateObj) => {
+        return dateObj.getFullYear() + "-" + 
+            String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + 
+            String(dateObj.getDate()).padStart(2, '0') + "T" + 
+            String(dateObj.getHours()).padStart(2, '0') + ":" + 
+            String(dateObj.getMinutes()).padStart(2, '0') + ":" + 
+            String(dateObj.getSeconds()).padStart(2, '0');
+    };
+
     // Define start date with fixed time 10:00:00
     inputDate.setHours(10, 0, 0, 0);
-    const startDate = inputDate.toISOString();
+    const startDate = formatDateTime(inputDate);
 
     // Calculate end date (3 months later) with fixed time 10:00:00
     const endDate = new Date(inputDate);
     endDate.setMonth(endDate.getMonth() + 3);
     endDate.setHours(10, 0, 0, 0);
-    const formattedEndDate = endDate.toISOString();
+    const formattedEndDate = formatDateTime(endDate);
 
     res.status(200).json({
         startDate: startDate,
         endDate: formattedEndDate
     });
 });
+
 
 
 // Start the server
