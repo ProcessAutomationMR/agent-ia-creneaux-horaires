@@ -59,8 +59,6 @@ app.post('/occupied-slots', (req, res) => {
   res.status(200).json({ free_slots: freeSlots.length ? freeSlots : "0" });
 });
 
-// Function to convert ISO date string to a Date object
-const parseISO = (isoString) => new Date(isoString);
 
 // Function to find non-occupied slots within working hours
 app.post('/non-occupied-slots', (req, res) => {
