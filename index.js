@@ -71,72 +71,67 @@ app.post('/non-occupied-slots', (req, res) => {
     return res.status(400).json({ message: "Invalid input, 'value' is required and should contain slots." });
   }
 
-  let availableSlots = [];
+  let availableSlots = {};
+  
+  // Convert occupied slots to Date objects and group by date
+  const occupiedByDay = {};
+  occupiedSlots.forEach(slot => {
+    const slotStart = new Date(slot.start);
+    const slotEnd = new Date(slot.end);
+    const slotDate = slotStart.toISOString().split("T")[0];
 
-  // Convert occupied slots to Date objects and sort them
-  const sortedOccupiedSlots = occupiedSlots
-    .map(slot => ({ start: parseISO(slot.start), end: parseISO(slot.end) }))
-    .sort((a, b) => a.start - b.start);
+    if (!occupiedByDay[slotDate]) {
+      occupiedByDay[slotDate] = [];
+    }
+    occupiedByDay[slotDate].push({ start: slotStart, end: slotEnd });
+  });
 
-  let currentDate = sortedOccupiedSlots[0].start.toISOString().split("T")[0]; // Start with the first occupied slot's date
-  let currentTime = new Date(`${currentDate}T09:00:00Z`); // Start of working hours
-
-  sortedOccupiedSlots.forEach((slot, index) => {
-    let slotDate = slot.start.toISOString().split("T")[0];
-
-    // If there's a gap between the last checked time and the new occupied slot
-    if (currentTime < slot.start) {
-      WORKING_HOURS.forEach(({ start, end }) => {
-        const workStart = new Date(`${slotDate}T${String(start).padStart(2, '0')}:00:00Z`);
-        const workEnd = new Date(`${slotDate}T${String(end).padStart(2, '0')}:00:00Z`);
-
-        if (currentTime < workStart) currentTime = workStart;
-
-        if (currentTime < slot.start && slot.start > workStart) {
-          availableSlots.push({ start: currentTime.toISOString(), end: slot.start.toISOString() });
+  // Process each day's occupied slots
+  Object.keys(occupiedByDay).forEach(date => {
+    const busySlots = occupiedByDay[date].sort((a, b) => a.start - b.start);
+    
+    let freePeriods = [];
+    
+    WORKING_HOURS.forEach(({ start, end }) => {
+      let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00Z`);
+      let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00Z`);
+      
+      let currentTime = workStart;
+      
+      for (let slot of busySlots) {
+        if (slot.start >= workEnd) break;
+        
+        if (currentTime < slot.start) {
+          freePeriods.push({ start: currentTime, end: new Date(Math.min(slot.start, workEnd)) });
         }
+        
+        currentTime = new Date(Math.max(currentTime, slot.end));
+      }
+      
+      if (currentTime < workEnd) {
+        freePeriods.push({ start: currentTime, end: workEnd });
+      }
+    });
 
-        if (slot.end < workEnd) {
-          currentTime = slot.end;
-        } else {
-          currentTime = workEnd;
-        }
-      });
+    if (freePeriods.length > 0) {
+      availableSlots[date] = freePeriods;
     }
   });
 
-  // Handle remaining free time at the end of the last occupied slot
-  let lastSlot = sortedOccupiedSlots[sortedOccupiedSlots.length - 1];
-  let lastSlotEnd = lastSlot.end;
-  let lastSlotDate = lastSlotEnd.toISOString().split("T")[0];
+  // Convert to readable format
+  const formattedSlots = Object.entries(availableSlots).map(([date, slots]) => {
+    const readableDate = new Date(date).toLocaleDateString("fr-FR", {
+      weekday: 'long', day: 'numeric', month: 'long'
+    });
+    
+    const timeSlots = slots.map(slot => {
+      return `${slot.start.getUTCHours()}h à ${slot.end.getUTCHours()}h`;
+    });
 
-  WORKING_HOURS.forEach(({ start, end }) => {
-    const workStart = new Date(`${lastSlotDate}T${String(start).padStart(2, '0')}:00:00Z`);
-    const workEnd = new Date(`${lastSlotDate}T${String(end).padStart(2, '0')}:00:00Z`);
-
-    if (lastSlotEnd < workEnd) {
-      availableSlots.push({ start: lastSlotEnd.toISOString(), end: workEnd.toISOString() });
-    }
+    return `${readableDate} de ${timeSlots.join(" ou ")}`;
   });
 
-  // Handle free slots spanning multiple days
-  for (let i = 0; i < availableSlots.length - 1; i++) {
-    let currentSlot = availableSlots[i];
-    let nextSlot = availableSlots[i + 1];
-
-    const currentSlotDate = currentSlot.start.split("T")[0];
-    const nextSlotDate = nextSlot.start.split("T")[0];
-
-    if (currentSlotDate !== nextSlotDate) {
-      let endOfDay = new Date(`${currentSlotDate}T18:00:00Z`);
-      let startOfNextDay = new Date(`${nextSlotDate}T09:00:00Z`);
-
-      availableSlots[i] = { start: currentSlot.start, end: endOfDay.toISOString() };
-      availableSlots[i + 1] = { start: startOfNextDay.toISOString(), end: nextSlot.end };
-    }
-  }
-
-  res.status(200).json({ available_slots: availableSlots.length ? availableSlots.slice(0, 3) : "0" });
+  res.status(200).json({ available_slots: formattedSlots.length ? formattedSlots : "0" });
 });
 
 
