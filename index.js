@@ -357,7 +357,7 @@ app.post('/convert-date', (req, res) => {
     });
 });
 
-// Route to convert a given date into fixed start and end times
+// Route to convert a given date into fixed start and end times in UTC
 app.post('/convert-date-months', (req, res) => {
     const { date } = req.body;
 
@@ -365,35 +365,29 @@ app.post('/convert-date-months', (req, res) => {
         return res.status(400).json({ error: "Missing 'date' parameter." });
     }
 
-    // Convert input to Date object
-    const inputDate = new Date(date);
+    // Convert input to Date object (Assuming input is in UTC+1)
+    const inputDate = new Date(date); // Keep as is (interpreted as UTC+1)
+
     if (isNaN(inputDate.getTime())) {
         return res.status(400).json({ error: "Invalid date format. Please provide a valid ISO date string." });
     }
 
-    // Define function to format date as 'YYYY-MM-DDTHH:MM:SS'
-    const formatDateTime = (dateObj) => {
-        return dateObj.getFullYear() + "-" + 
-            String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + 
-            String(dateObj.getDate()).padStart(2, '0') + "T" + 
-            String(dateObj.getHours()).padStart(2, '0') + ":" + 
-            String(dateObj.getMinutes()).padStart(2, '0') + ":" + 
-            String(dateObj.getSeconds()).padStart(2, '0');
-    };
+    // Convert UTC+1 to UTC by subtracting 1 hour
+    inputDate.setTime(inputDate.getTime() - (1 * 60 * 60 * 1000));
 
-    // Define start date with fixed time 10:00:00
-    inputDate.setHours(10, 0, 0, 0);
-    const startDate = formatDateTime(inputDate);
+    // Set fixed time to 13:00:00 UTC
+    inputDate.setUTCHours(13, 0, 0, 0);
+    const startTime = inputDate.toISOString().slice(0, 19) + "Z"; // Ensures UTC format
 
-    // Calculate end date (3 months later) with fixed time 10:00:00
+    // Calculate the end date (3 months later) at 13:00:00 UTC
     const endDate = new Date(inputDate);
-    endDate.setMonth(endDate.getMonth() + 3);
-    endDate.setHours(10, 0, 0, 0);
-    const formattedEndDate = formatDateTime(endDate);
+    endDate.setUTCMonth(endDate.getUTCMonth() + 3);
+    endDate.setUTCHours(13, 0, 0, 0);
+    const endTime = endDate.toISOString().slice(0, 19) + "Z"; // Ensures UTC format
 
     res.status(200).json({
-        startDate: startDate,
-        endDate: formattedEndDate
+        startTime: startTime,
+        endTime: endTime
     });
 });
 
