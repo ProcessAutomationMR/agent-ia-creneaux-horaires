@@ -375,14 +375,14 @@ app.post('/convert-date-months', (req, res) => {
     // Convert UTC+1 to UTC by subtracting 1 hour
     inputDate.setTime(inputDate.getTime() - (1 * 60 * 60 * 1000));
 
-    // Set fixed time to 13:00:00 UTC
-    inputDate.setUTCHours(13, 0, 0, 0);
+    // Set fixed time to 08:00:00 UTC
+    inputDate.setUTCHours(8, 0, 0, 0);
     const startTime = inputDate.toISOString().slice(0, 19) + "Z"; // Ensures UTC format
 
-    // Calculate the end date (3 months later) at 13:00:00 UTC
+    // Calculate the end date (3 months later) at 8:00:00 UTC
     const endDate = new Date(inputDate);
     endDate.setUTCMonth(endDate.getUTCMonth() + 3);
-    endDate.setUTCHours(13, 0, 0, 0);
+    endDate.setUTCHours(8, 0, 0, 0);
     const endTime = endDate.toISOString().slice(0, 19) + "Z"; // Ensures UTC format
 
     res.status(200).json({
