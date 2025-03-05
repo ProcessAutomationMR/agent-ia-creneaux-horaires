@@ -168,17 +168,21 @@ app.post('/suggest-slots-enhanced', (req, res) => {
     return res.status(400).json({ message: "Invalid input, 'free_slots' is required and should contain an array of slots." });
   }
 
-  // Define working hours
+  // Define working hours in UTC+1
   const WORKING_HOURS = [
     { start: 9, end: 12 },
     { start: 14, end: 18 }
   ];
 
-  // Extract first three valid slots within working hours
+  // Extract first three valid slots within working hours (convert UTC ➝ UTC+1)
   const suggestedSlots = free_slots
+    .map(slot => ({
+      startDate: new Date(new Date(slot.startDate).getTime() + (1 * 60 * 60 * 1000)), // Convert to UTC+1
+      endDate: new Date(new Date(slot.endDate).getTime() + (1 * 60 * 60 * 1000)) // Convert to UTC+1
+    }))
     .filter(slot => {
-      const startHour = new Date(slot.startDate).getUTCHours();
-      const endHour = new Date(slot.endDate).getUTCHours();
+      const startHour = slot.startDate.getUTCHours();
+      const endHour = slot.endDate.getUTCHours();
       
       return WORKING_HOURS.some(({ start, end }) => 
         (start <= startHour && startHour < end) || (start < endHour && endHour <= end)
@@ -186,18 +190,18 @@ app.post('/suggest-slots-enhanced', (req, res) => {
     })
     .slice(0, 3);
 
-  // Function to format date in French
+  // Function to format date in French (UTC+1)
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: "Europe/Paris" });
   };
 
   // Group slots by date
   const slotsByDate = {};
   suggestedSlots.forEach(slot => {
     const date = formatDate(slot.startDate);
-    const timeRange = `${new Date(slot.startDate).getUTCHours()}h à ${new Date(slot.endDate).getUTCHours()}h`;
-    
+    const timeRange = `${slot.startDate.getUTCHours()}h à ${slot.endDate.getUTCHours()}h`;
+
     if (!slotsByDate[date]) {
       slotsByDate[date] = [];
     }
@@ -213,6 +217,7 @@ app.post('/suggest-slots-enhanced', (req, res) => {
 
   res.status(200).json({ suggested_slots: responseMessage });
 });
+
 
 
 
