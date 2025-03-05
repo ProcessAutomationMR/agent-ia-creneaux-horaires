@@ -290,18 +290,25 @@ app.post("/execute", (req, res) => {
         return res.status(400).json({ error: "Missing required parameters: either 'code' or 'startTime' must be provided." });
     }
 
-    // If 'startTime' is provided, convert it into an end time
+    // If 'startTime' is provided, convert it from UTC+1 to UTC and calculate endTime
     if (startTime) {
-        const startDate = new Date(startTime);
-        if (isNaN(startDate.getTime())) {
+        // Convert input (UTC+1) to Date object
+        const inputDate = new Date(startTime);
+        if (isNaN(inputDate.getTime())) {
             console.log("DEBUG: Invalid startTime format:", startTime);
             return res.status(400).json({ error: "Invalid ISO format for 'startTime'." });
         }
 
-        const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+        // Convert from Europe/Paris (UTC+1) to UTC
+        const utcStartDate = new Date(inputDate.getTime() - (1 * 60 * 60 * 1000)); // Subtract 1 hour to get UTC time
+
+        // Calculate endTime (startTime + 1 hour, in UTC)
+        const utcEndDate = new Date(utcStartDate.getTime() + (1 * 60 * 60 * 1000));
+
+        // Return formatted UTC output
         return res.json({
-            startTime: startTime,
-            endTime: endDate.toISOString().slice(0, 19)
+            startTime: utcStartDate.toISOString().slice(0, 19) + "Z", // Force UTC format
+            endTime: utcEndDate.toISOString().slice(0, 19) + "Z"  // Force UTC format
         });
     }
 
@@ -314,6 +321,7 @@ app.post("/execute", (req, res) => {
         return res.status(500).json({ error: error.message, trace: error.stack });
     }
 });
+
 
 
 // Route to convert a given date into fixed start and end times
