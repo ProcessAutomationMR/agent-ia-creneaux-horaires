@@ -77,11 +77,11 @@ app.post('/non-occupied-slots', (req, res) => {
   let availableSlots = [];
   const occupiedByDay = {};
 
-  // Convert occupied slots to Date objects and adjust from GMT to GMT+1
+  // Convert occupied slots to Date objects (WITHOUT time zone adjustments)
   occupiedSlots.forEach(slot => {
-    const slotStart = new Date(new Date(slot.start).getTime() + 60 * 60 * 1000); // Convert to GMT+1
-    const slotEnd = new Date(new Date(slot.end).getTime() + 60 * 60 * 1000); // Convert to GMT+1
-    const slotDate = slotStart.toISOString().split("T")[0];
+    const slotStart = new Date(slot.start); // Keep as UTC
+    const slotEnd = new Date(slot.end); // Keep as UTC
+    const slotDate = slotStart.toISOString().split("T")[0]; // Extract date part only
 
     if (!occupiedByDay[slotDate]) {
       occupiedByDay[slotDate] = [];
@@ -89,10 +89,10 @@ app.post('/non-occupied-slots', (req, res) => {
     occupiedByDay[slotDate].push({ start: slotStart, end: slotEnd });
   });
 
-  // Define working hours in GMT+1
+  // Define working hours in **UTC**
   const WORKING_HOURS = [
-    { start: 9, end: 12 }, // 09:00 - 12:00
-    { start: 14, end: 18 } // 14:00 - 18:00
+    { start: 8, end: 11 }, // UTC equivalent of 9-12 CET
+    { start: 13, end: 17 } // UTC equivalent of 14-18 CET
   ];
 
   // Process each day's occupied slots
@@ -105,16 +105,16 @@ app.post('/non-occupied-slots', (req, res) => {
     if (dayOfWeek === 6 || dayOfWeek === 0) return;
 
     WORKING_HOURS.forEach(({ start, end }) => {
-      let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00+01:00`); // GMT+1
-      let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00+01:00`); // GMT+1
+      let workStart = new Date(`${date}T${String(start).padStart(2, '0')}:00:00Z`); // UTC
+      let workEnd = new Date(`${date}T${String(end).padStart(2, '0')}:00:00Z`); // UTC
 
-      let currentTime = workStart; // 🔹 Explicitly set it to workStart
+      let currentTime = workStart; // Start from workStart in UTC
 
       for (let slot of busySlots) {
         if (slot.start >= workEnd) break;
 
         if (currentTime < slot.start) {
-          // 🚨 Ensuring the first slot does not start before workStart
+          // Ensure the first slot does not start before workStart
           let validStart = new Date(Math.max(currentTime.getTime(), workStart.getTime()));
 
           availableSlots.push({
@@ -138,6 +138,7 @@ app.post('/non-occupied-slots', (req, res) => {
   // Return only the first 3 slots
   res.status(200).json({ available_slots: availableSlots.slice(0, 3) });
 });
+
 
 
 
